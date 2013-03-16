@@ -430,6 +430,8 @@ public class VideoModule implements CameraModule,
         mPrefVideoEffectDefault = mActivity.getString(R.string.pref_video_effect_default);
         resetEffect();
 
+        Storage.setStorage(CameraSettings.readStorage(mPreferences));
+
         // Power shutter
         mActivity.initPowerShutter(mPreferences);
 
@@ -1443,7 +1445,7 @@ public class VideoModule implements CameraModule,
         // Used when emailing.
         String filename = title + convertOutputFormatToFileExt(outputFileFormat);
         String mime = convertOutputFormatToMimeType(outputFileFormat);
-        String path = Storage.DIRECTORY + '/' + filename;
+        String path = Storage.generateDirectory() + '/' + filename;
         String tmpPath = path + ".tmp";
         mCurrentVideoValues = new ContentValues(7);
         mCurrentVideoValues.put(Video.Media.TITLE, title);
@@ -2017,13 +2019,13 @@ public class VideoModule implements CameraModule,
 
         // Set JPEG quality.
         int jpegQuality = Integer.parseInt(mPreferences.getString(
-                CameraSettings.KEY_VIDEOCAMERA_JPEG,
+                CameraSettings.KEY_JPEG,
                 mActivity.getString(R.string.pref_camera_jpeg_default)));
         mParameters.setJpegQuality(jpegQuality);
 
         // Color effect
         String colorEffect = mPreferences.getString(
-                CameraSettings.KEY_VIDEOCAMERA_COLOR_EFFECT,
+                CameraSettings.KEY_COLOR_EFFECT,
                 mActivity.getString(R.string.pref_camera_coloreffect_default));
         if (Util.isSupported(colorEffect, mParameters.getSupportedColorEffects())) {
             mParameters.setColorEffect(colorEffect);
@@ -2340,6 +2342,13 @@ public class VideoModule implements CameraModule,
 
             // Check if the current effects selection has changed
             if (updateEffectSelection()) return;
+
+            String storage = CameraSettings.readStorage(mPreferences);
+            if (!storage.equals(Storage.getStorage())) {
+                Storage.setStorage(storage);
+                mActivity.updateStorageSpaceAndHint();
+                mActivity.reuseCameraScreenNail(!mIsVideoCaptureIntent);
+            }
 
             readVideoPreferences();
             showTimeLapseUI(mCaptureTimeLapse);
